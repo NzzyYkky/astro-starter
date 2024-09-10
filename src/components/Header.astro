@@ -1,0 +1,185 @@
+---
+import { button } from '@variants/button';
+import { container } from '@variants/container';
+import { linkHover } from '@variants/linkHover';
+
+const nav = [
+	{
+		name: 'NEWS',
+		url: '#',
+	},
+	{
+		name: 'ABOUT',
+		url: '#',
+	},
+	{
+		name: 'TECHNOLOGY',
+		url: '#',
+	},
+	{
+		name: 'FEATURE',
+		url: '#',
+	},
+];
+---
+
+<header
+	class={container({
+		wide: 'header',
+		class: 'fixed z-header top-0',
+	})}
+>
+	<div class="flex justify-between items-center h-full">
+		<h1
+			class="text-header-sp leading-tight font-raleway font-bold md:text-header"
+		>
+			Logo
+		</h1>
+		<button
+			id="js-hamburger-button"
+			class="group relative md:hidden w-[20px] h-[16px] z-header"
+			aria-expanded="false"
+		>
+			<span
+				class="absolute w-full h-[1px] bg-black transition-all duration-300 ease-in-out origin-center
+               top-0 left-0 group-[.is-open]:top-[7px] group-[.is-open]:rotate-45"
+			></span>
+			<span
+				class="absolute w-full h-[1px] bg-black transition-all duration-300 ease-in-out
+               top-[7px] left-0 group-[.is-open]:opacity-0"
+			></span>
+			<span
+				class="absolute w-full h-[1px] bg-black transition-all duration-300 ease-in-out origin-center
+               bottom-0 left-0 group-[.is-open]:top-[7px] group-[.is-open]:-rotate-45"
+			></span>
+		</button>
+		<nav
+			id="js-nav-menu"
+			class="max-md:absolute max-md:w-full max-md:h-[100vh] max-md:top-0 max-md:left-0 max-md:hidden max-md:justify-center max-md:items-center max-md:bg-black/30 max-md:backdrop-blur-md"
+		>
+			<ul class="flex items-center flex-col gap-10 md:flex-row md:gap-6">
+				{
+					nav.map((item) => (
+						<li
+							class={linkHover({
+								class: 'text-header-sp font-bold md:text-base',
+							})}
+						>
+							<a href={item.url} class="px-2.5 w-full h-full cursor-pointer">
+								{item.name}
+							</a>
+						</li>
+					))
+				}
+				<li
+					class={button({
+						color: 'primary',
+					})}
+				>
+					<a href="/contact/">CONTACT</a>
+				</li>
+			</ul>
+		</nav>
+	</div>
+</header>
+
+<script>
+	// NOTE:定数とタイプの定義
+	const HAMBURGER_BREAK_POINT = 768;
+	const ANIMATION_DURATION = 500;
+
+	type ScrollingElement = Element | null;
+
+	// NOTE:DOM要素の取得
+	const hamburgerButton = document.getElementById(
+		'js-hamburger-button'
+	) as HTMLElement;
+	const navMenu = document.getElementById('js-nav-menu') as HTMLElement;
+	const mql = window.matchMedia(`(min-width: ${HAMBURGER_BREAK_POINT}px)`);
+
+	// NOTE:ユーティリティ関数
+	const getScrollingElement = (): ScrollingElement => {
+		return 'scrollingElement' in document
+			? document.scrollingElement
+			: (document as Document).documentElement;
+	};
+
+	// NOTE:背景固定の処理
+	const backgroundFix = (isFixed: boolean): void => {
+		const scrollY = isFixed
+			? getScrollingElement()?.scrollTop || 0
+			: parseInt(document.body.style.top || '0');
+
+		const fixedClasses = ['h-screen', 'fixed', 'left-0', 'w-screen'];
+
+		if (isFixed) {
+			document.body.classList.add(...fixedClasses);
+			document.body.style.top = `${-scrollY}px`;
+		} else {
+			document.body.classList.remove(...fixedClasses);
+			document.body.style.top = '';
+
+			if (window.innerWidth < HAMBURGER_BREAK_POINT) {
+				window.scrollTo(0, -scrollY);
+			}
+		}
+	};
+
+	// NOTE:メニューを即座に非表示にする処理
+	const hideMenuInstantly = (): void => {
+		backgroundFix(false);
+		navMenu.classList.add('max-md:hidden');
+		navMenu.classList.remove(
+			'max-md:flex',
+			'animate-fadeIn',
+			'animate-fadeOut'
+		);
+		hamburgerButton.setAttribute('aria-expanded', 'false');
+		hamburgerButton.classList.remove('is-open');
+	};
+
+	// NOTE:メニューの開閉処理
+	const toggleMenu = (isOpen: boolean): void => {
+		backgroundFix(isOpen);
+		hamburgerButton.setAttribute('aria-expanded', String(isOpen));
+		hamburgerButton.classList.toggle('is-open', isOpen);
+
+		if (isOpen) {
+			navMenu.classList.remove('max-md:hidden');
+			navMenu.classList.add('max-md:flex', 'animate-fadeIn');
+			navMenu.classList.remove('animate-fadeOut');
+		} else {
+			navMenu.classList.add('animate-fadeOut');
+			navMenu.classList.remove('animate-fadeIn');
+			setTimeout(() => {
+				navMenu.classList.add('max-md:hidden');
+				navMenu.classList.remove('max-md:flex', 'animate-fadeOut');
+			}, ANIMATION_DURATION);
+		}
+
+		if (!isOpen) {
+			hamburgerButton.focus();
+		}
+	};
+
+	// NOTE:メディアクエリの変更ハンドラ
+	const handleWidthChange = (e: MediaQueryListEvent | MediaQueryList): void => {
+		if (e.matches) {
+			hideMenuInstantly();
+		}
+	};
+
+	// NOTE:イベントリスナーの設定
+	mql.addEventListener('change', handleWidthChange);
+	handleWidthChange(mql);
+
+	hamburgerButton.addEventListener('click', () => {
+		toggleMenu(navMenu.classList.contains('max-md:hidden'));
+	});
+
+	window.addEventListener('keydown', (event) => {
+		if (event.key === 'Escape') {
+			toggleMenu(false);
+		}
+	});
+</script>
